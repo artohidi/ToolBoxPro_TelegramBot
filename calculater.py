@@ -40,11 +40,16 @@ def show(bot, query, input_data):
                           reply_markup=InlineKeyboardMarkup(calculator_keyboard))
 
 
+def show_set(bot, query, input_list):
+    bot.edit_message_text(chat_id=query.message.chat_id, text=str(input_list), message_id=query.message.message_id,
+                          reply_markup=InlineKeyboardMarkup(calculator_keyboard))
+
+
 def button(bot, update):
     global list_set, output, param, output_plus, output_minus, show_list
     query = update.callback_query
     data = query.data
-    if len(list_set) < 2:
+    if len(list_set) < 1:
         if data in active_parameters:
             if data == '+/-':
                 if output == '0':
@@ -53,7 +58,7 @@ def button(bot, update):
                 elif output == "-0":
                     output = '0'
                     show(bot, query, output)
-                else:
+                elif output in numbers and output != '0':
                     output = str(-1 * int(output))
                     show(bot, query, output)
             elif data == '✕':
@@ -69,29 +74,33 @@ def button(bot, update):
         elif data == "AC":
             output = '0'
             list_set = []
+            show_list = ''
             show(bot, query, output)
+        elif int(data) == '0':
+            pass
         elif int(data) in numbers:
-            if int(data) == 0:
-                output = data
-                show(bot, query, output)
-            else:
-                output = data
-                list_set.append(output)
-                show(bot, query, output)
+            output = data
+            list_set.append(output)
+            show(bot, query, output)
         else:
             pass
     elif len(list_set) < 9:
-        bot.edit_message_text(chat_id=query.message.chat_id, text=str(show_list_set()),
-                              message_id=query.message.message_id,
-                              reply_markup=InlineKeyboardMarkup(calculator_keyboard))
         if data == "AC":
             output = '0'
             list_set = []
-            bot.edit_message_text(chat_id=query.message.chat_id, text=str(output), message_id=query.message.message_id,
-                                  reply_markup=InlineKeyboardMarkup(calculator_keyboard))
+            show_list = ''
+            show(bot, query, output)
         elif data in active_parameters:
             if data == '+/-':
-                output = "-" + output
+                if show_list == '0':
+                    show_list = "-0"
+                    show_set(bot, query, show_list)
+                elif show_list == "-0":
+                    show_list = '0'
+                    show_set(bot, query, show_list)
+                else:
+                    show_list = str(-1 * int(show_list))
+                    show_set(bot, query, show_list)
             elif data == '✕':
                 pass
             elif data == '+':
@@ -114,13 +123,16 @@ def button(bot, update):
                     output = str(int(output_minus) - int(show_list))
                 else:
                     pass
-        elif int(data) in numbers and data != '0':
-            output = data
+        elif int(data) in numbers:
             list_set.append(data)
-
+            show_list = show_list_set()
+            show_set(bot, query, show_list)
     else:
-        print(show_list_set())
-        print(calculator_keyboard)
+        if data == "AC":
+            output = '0'
+            list_set = []
+            show_list = ''
+            show(bot, query, output)
 
 
 def start(bot, update):
