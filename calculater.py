@@ -1,55 +1,131 @@
-from telegram import ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler
-from telegram.replykeyboardremove import ReplyKeyboardRemove
-import json
-import requests
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import Updater, CommandHandler, CallbackQueryHandler
 
-updater = Updater('405494586:AAEV7gYsdcocDBeodO3h4yyos0RfEOkAFRg')
+updater = Updater('415849603:AAHCkQk38htqb0jX7gYqgV8BdP-18cG5H6c')
 
+list_set = []
+numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0]
+parameters = ["+/-", "%", "÷", "✕", "-", "+", "=", "."]
+active_parameters = ["+/-", "✕", "+", "-", "÷", "."]
+deactivate_parameters = ["%", "="]
+output = '0'
+output_plus = ''
+output_minus = ''
+param = ''
+show_list = ''
 calculator_keyboard = [
-    [InlineKeyboardButton("(", callback_data='('), InlineKeyboardButton(")", callback_data=')'),
-     InlineKeyboardButton("%", callback_data='%'), InlineKeyboardButton("CE", callback_data='11')],
+    [InlineKeyboardButton("AC", callback_data='AC'), InlineKeyboardButton("+/-", callback_data='+/-'),
+     InlineKeyboardButton("%", callback_data='%'), InlineKeyboardButton("÷", callback_data='÷')],
     [InlineKeyboardButton("1", callback_data='1'), InlineKeyboardButton("2", callback_data='2'),
-     InlineKeyboardButton("3", callback_data='3'), InlineKeyboardButton("÷", callback_data='÷')],
+     InlineKeyboardButton("3", callback_data='3'), InlineKeyboardButton("✕", callback_data='÷')],
     [InlineKeyboardButton("4", callback_data='4'), InlineKeyboardButton("5", callback_data='5'),
-     InlineKeyboardButton("6", callback_data='6'), InlineKeyboardButton("✕", callback_data='✕')],
+     InlineKeyboardButton("6", callback_data='6'), InlineKeyboardButton("-", callback_data='-')],
     [InlineKeyboardButton("7", callback_data='7'), InlineKeyboardButton("8", callback_data='8'),
-     InlineKeyboardButton("9", callback_data='9'), InlineKeyboardButton("-", callback_data='-')],
-    [InlineKeyboardButton(".", callback_data='.'), InlineKeyboardButton("0", callback_data='0'),
-     InlineKeyboardButton("=", callback_data='='), InlineKeyboardButton("+", callback_data='+')]
+     InlineKeyboardButton("9", callback_data='9'), InlineKeyboardButton("+", callback_data='+')],
+    [InlineKeyboardButton("0", callback_data='0'), InlineKeyboardButton(".", callback_data='.'),
+     InlineKeyboardButton("=", callback_data='='), ]
 ]
 
-numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0]
-parameter = ['=', '+', '-', '%', '✕', '÷']
+
+def show_list_set():
+    global list_set, show_list
+    show_list = ''
+    for i in range(0, len(list_set)):
+        show_list = show_list + str(list_set[i])
+    return show_list
+
+
+def show(bot, query, input_data):
+    bot.edit_message_text(chat_id=query.message.chat_id, text=str(input_data), message_id=query.message.message_id,
+                          reply_markup=InlineKeyboardMarkup(calculator_keyboard))
 
 
 def button(bot, update):
+    global list_set, output, param, output_plus, output_minus, show_list
     query = update.callback_query
     data = query.data
-    if int(data) in numbers:
-        bot.edit_message_text(chat_id=query.message.chat_id,
-                              text=str(query.data), message_id=query.message.message_id,
+    if len(list_set) < 2:
+        if data in active_parameters:
+            if data == '+/-':
+                if output == '0':
+                    output = "-0"
+                    show(bot, query, output)
+                elif output == "-0":
+                    output = '0'
+                    show(bot, query, output)
+                else:
+                    output = str(-1 * int(output))
+                    show(bot, query, output)
+            elif data == '✕':
+                pass
+            elif data == '+':
+                pass
+            elif data == '-':
+                pass
+            elif data == '÷':
+                pass
+            elif data == '.':
+                pass
+        elif data == "AC":
+            output = '0'
+            list_set = []
+            show(bot, query, output)
+        elif int(data) in numbers:
+            if int(data) == 0:
+                output = data
+                show(bot, query, output)
+            else:
+                output = data
+                list_set.append(output)
+                show(bot, query, output)
+        else:
+            pass
+    elif len(list_set) < 9:
+        bot.edit_message_text(chat_id=query.message.chat_id, text=str(show_list_set()),
+                              message_id=query.message.message_id,
                               reply_markup=InlineKeyboardMarkup(calculator_keyboard))
-    elif data == 'CE':
-        bot.edit_message_text(chat_id=query.message.chat_id,
-                              text="0", message_id=query.message.message_id,
-                              reply_markup=InlineKeyboardMarkup(calculator_keyboard))
-    elif data in parameter:
-        if data == '=':
-            pass
-        if data == '+':
-            pass
-        if data == '-':
-            pass
-        if data == '%':
-            pass
-        if data == '÷':
-            pass
-        if data == '✕':
-            pass
+        if data == "AC":
+            output = '0'
+            list_set = []
+            bot.edit_message_text(chat_id=query.message.chat_id, text=str(output), message_id=query.message.message_id,
+                                  reply_markup=InlineKeyboardMarkup(calculator_keyboard))
+        elif data in active_parameters:
+            if data == '+/-':
+                output = "-" + output
+            elif data == '✕':
+                pass
+            elif data == '+':
+                output_plus = show_list_set()
+                show_list = '0'
+                param = '+'
+            elif data == '-':
+                output_minus = show_list_set()
+                show_list = '0'
+                param = '-'
+            elif data == '÷':
+                pass
+            elif data == '.':
+                pass
+        elif data in deactivate_parameters:
+            if data == '=':
+                if param == '+':
+                    show_list = str(int(output_plus) + int(show_list))
+                elif param == '-':
+                    output = str(int(output_minus) - int(show_list))
+                else:
+                    pass
+        elif int(data) in numbers and data != '0':
+            output = data
+            list_set.append(data)
+
+    else:
+        print(show_list_set())
+        print(calculator_keyboard)
 
 
 def start(bot, update):
+    global list_set
+    list_set = []
     chat_id = update.message.chat_id
     bot.send_message(chat_id, "0", reply_markup=InlineKeyboardMarkup(calculator_keyboard))
 
